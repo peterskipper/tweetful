@@ -39,25 +39,27 @@ def get_access_token(request_token,request_secret,verifier):
     access_secret = credentials.get("oauth_token_secret")[0]
     return access_token, access_secret
 
-def store_credentials(access_token, access_secret):
+def store_credentials(user, access_token, access_secret):
     """Save our access credentials in a json file"""
     with open("access.json", "w") as f:
-        json.dump({"access_token": access_token, "access_secret": access_secret}, f)
+        json.dump({user : {"access_token": access_token, 
+            "access_secret": access_secret} }, f)
 
-def get_stored_credentials():
+def get_stored_credentials(user):
     """Try to retrieve stored access credentials from a json file"""
     with open("access.json", "r") as f:
         credentials = json.load(f)
-        return credentials["access_token"], credentials["access_secret"]
+        user_creds = credentials[user]
+        return user_creds["access_token"], user_creds["access_secret"]
 
-def authorize():
+def authorize(user):
     """A complete OAuth authentication flow"""
     try:
-        access_token, access_secret = get_stored_credentials()
-    except IOError:
+        access_token, access_secret = get_stored_credentials(user)
+    except (KeyError, IOError) as e:
         request_token, request_secret = get_request_token()
         verifier = get_user_authorization(request_token)
         access_token, access_secret = get_access_token(request_token, request_secret, verifier)
-        store_credentials(access_token,access_secret)
+        store_credentials(user,access_token,access_secret)
     oauth = OAuth1(CLIENT_KEY, client_secret=CLIENT_SECRET, resource_owner_key=access_token, resource_owner_secret=access_secret)
     return oauth
